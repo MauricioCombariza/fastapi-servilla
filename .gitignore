@@ -1,0 +1,11 @@
+.DS_STORE
+*.pyc
+__pycache__/
+.env
+*.dev
+.serviya
+.vscode/
+*.png
+.pytest_cache/
+*.db
+*.log
