@@ -4,11 +4,11 @@ from app.database import (
     order_table,
     cajoneras_table
     )
-from app.routers.function_chat import (
-    table_to_dataframe,
-    process_and_send_messages,
-    update_cajoneras_from_whatsapp
-    )
+# from app.routers.function_chat import (
+#     table_to_dataframe,
+#     process_and_send_messages,
+#     update_cajoneras_from_whatsapp
+#     )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter()
@@ -19,11 +19,11 @@ table_mapping = {
     # Añade más mapeos según sea necesario
 }
 
-@router.get("/crear-df")
-async def endpoint_crear_df(table_name: str):
-    table = table_mapping.get(table_name)
-    await table_to_dataframe(table)
-    return {"message": "DataFrame creado y mostrado en consola"}
+# @router.get("/crear-df")
+# async def endpoint_crear_df(table_name: str):
+#     table = table_mapping.get(table_name)
+#     await table_to_dataframe(table)
+#     return {"message": "DataFrame creado y mostrado en consola"}
 
 # eliminando whatsapp
 

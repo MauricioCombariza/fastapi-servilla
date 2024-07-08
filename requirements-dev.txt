@@ -2,4 +2,3 @@ pytest
 httpx
 pytest-asyncio
 pytest-mock
-pandas
