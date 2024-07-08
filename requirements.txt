@@ -14,3 +14,4 @@ passlib[bcrypt]
 python-multipart
 pywhatkit
 pandas
+unidecode
