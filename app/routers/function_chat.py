@@ -1,7 +1,6 @@
 from fastapi import HTTPException
 from typing import List
 from datetime import datetime, timedelta
-from pywhatkit import sendwhatmsg_instantly
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.sql import update
@@ -11,11 +10,11 @@ from app.database import (
     order_table,
     database
 )
+import pywhatkit as kit
 
 async def table_to_dataframe(table_name: str):
     """
     Convierte una tabla de SQLAlchemy a un DataFrame de pandas.
-
     """
     # Ejecutar la consulta para obtener todos los registros de la tabla
     query = select(table_name)
@@ -44,32 +43,28 @@ async def df_whatsapp_messages():
     columnas_df_order = ['serial', 'nombre', 'cod_men','id_cliente','direccion', 'telefono', 'forma_pago', 'recaudo', 'contenido', 'forma_de_pago']  
     df_final = df_final.filter(items=columnas_df_order)
 
-
     print(df_final.columns)
 
     # Paso 4: df_final es el DataFrame resultante
     return df_final
 
-    # Calcular las fechas de entrega (mañana y pasado mañana
-
-    
 async def process_and_send_messages():
-    # Read the DataFrame from Excel file
+    # Lee el DataFrame desde el archivo Excel
     # df = pd.read_excel('../libros/base_envios.xlsx')
     df = await df_whatsapp_messages()
 
-    # Get the current date
+    # Obtén la fecha actual
     fecha_actual = datetime.now()
 
-    # Calculate delivery dates (tomorrow and day after tomorrow)
+    # Calcula las fechas de entrega (mañana y pasado mañana)
     fecha_entrega_manana = fecha_actual + timedelta(days=1)
     fecha_entrega_pasado_manana = fecha_actual + timedelta(days=3)
 
-    # Iterate over each row in the DataFrame
+    # Itera sobre cada fila en el DataFrame
     for index, row in df.iterrows():
-        # Construct the message for each row
+        # Construye el mensaje para cada fila
         phone_number = "+57" + str(row['telefono'])
-        serial=row['serial']
+        serial = row['serial']
         message = f"""
         Hola **{row['nombre']}**,
 
@@ -81,21 +76,19 @@ async def process_and_send_messages():
 
         El producto será entregado entre el {fecha_entrega_manana.strftime('%d/%m')} y el {fecha_entrega_pasado_manana.strftime('%d/%m')}.
 
-
         Recuerda que puedes pagarnos por Nequi al celular **3125213058** y enviar por WhatsApp el nombre del cliente y el nombre de la persona que hace la transferencia.
 
         Si tienes alguna novedad, escríbenos a este número.
         """
 
-        # Send the message using pywhatkit
-        sendwhatmsg_instantly(phone_number, message, 15, True, 3)
-        print("seial",serial)
-        await update_cajoneras_from_whatsapp(serial)
-
-        print(f"Mensaje enviado a {phone_number}")
-
-    # print("Mensajes enviados exitosamente")
-
+        # Enviar el mensaje usando pywhatkit
+        try:
+            kit.sendwhatmsg_instantly(phone_number, message, 15, True, 3)
+            print("Serial", serial)
+            await update_cajoneras_from_whatsapp(serial)
+            print(f"Mensaje enviado a {phone_number}")
+        except Exception as e:
+            print(f"Error al enviar el mensaje a {phone_number}: {e}")
 
 async def update_cajoneras_from_whatsapp(serial: int):
     # Crear la consulta SQL para actualizar la columna envio_whatsapp en la tabla cajoneras_table
