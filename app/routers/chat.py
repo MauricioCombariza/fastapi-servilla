@@ -25,13 +25,17 @@ async def endpoint_crear_df(table_name: str):
     await table_to_dataframe(table)
     return {"message": "DataFrame creado y mostrado en consola"}
 
-@router.post("/enviar_mensajes/")
-async def enviar_mensajes():
-    try:
-        await process_and_send_messages()
-        return {"mensaje": "Mensajes enviados exitosamente"}
-    except Exception as e:
-        return {"error": str(e)}
+# eliminando whatsapp
+
+# @router.post("/enviar_mensajes/")
+# async def enviar_mensajes():
+#     try:
+#         await process_and_send_messages()
+#         return {"mensaje": "Mensajes enviados exitosamente"}
+#     except Exception as e:
+        # return {"error": str(e)}
+
+# Sin whatsapp
 
 
 @router.put("/update-cajoneras/{serial}")
