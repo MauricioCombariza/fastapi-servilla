@@ -16,3 +16,4 @@ pywhatkit
 pandas
 unidecode
 httpx
+openpyxl
