@@ -23,7 +23,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 origins = [
-    "http://localhost:3000",  # Permitir solicitudes desde este origen
+    "http://localhost:3000",
+    "https://servilla.com.co",   # Permitir solicitudes desde este origen
 ]
 
 
