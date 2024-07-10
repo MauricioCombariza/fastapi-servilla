@@ -49,7 +49,7 @@ mensajeros_table = sqlalchemy.Table(
     sqlalchemy.Column("email", sqlalchemy.String, unique=True),
     sqlalchemy.Column("sector", sqlalchemy.String),
     sqlalchemy.Column("telefono", sqlalchemy.String),
-    sqlalchemy.Column("cod_men", sqlalchemy.Integer),
+    sqlalchemy.Column("cod_men", sqlalchemy.Integer, unique=True),
     sqlalchemy.Column("password", sqlalchemy.String),
     sqlalchemy.Column("permiso", sqlalchemy.Boolean),
 )
