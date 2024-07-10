@@ -39,6 +39,21 @@ product_table = sqlalchemy.Table(
     sqlalchemy.Column("precio", sqlalchemy.Float),
 )
 
+mensajeros_table = sqlalchemy.Table(
+    "mensajeros",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id_bodega", sqlalchemy.ForeignKey("bodegas.id"), nullable=False),
+    sqlalchemy.Column("nombre", sqlalchemy.String),
+    sqlalchemy.Column("direccion", sqlalchemy.String),
+    sqlalchemy.Column("email", sqlalchemy.String, unique=True),
+    sqlalchemy.Column("sector", sqlalchemy.String),
+    sqlalchemy.Column("telefono", sqlalchemy.String),
+    sqlalchemy.Column("cod_men", sqlalchemy.Integer),
+    sqlalchemy.Column("password", sqlalchemy.String),
+    sqlalchemy.Column("permiso", sqlalchemy.Boolean),
+)
+
 order_table = sqlalchemy.Table(
     "orders",
     metadata,
@@ -101,20 +116,6 @@ usuarios_table = sqlalchemy.Table(
 )
 
 
-mensajeros_table = sqlalchemy.Table(
-    "mensajeros",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("id_bodega", sqlalchemy.ForeignKey("bodegas.id"), nullable=False),
-    sqlalchemy.Column("nombre", sqlalchemy.String),
-    sqlalchemy.Column("direccion", sqlalchemy.String),
-    sqlalchemy.Column("email", sqlalchemy.String, unique=True),
-    sqlalchemy.Column("sector", sqlalchemy.String),
-    sqlalchemy.Column("telefono", sqlalchemy.String),
-    sqlalchemy.Column("cod_men", sqlalchemy.Integer),
-    sqlalchemy.Column("password", sqlalchemy.String),
-    sqlalchemy.Column("permiso", sqlalchemy.Boolean),
-)
 
 cajoneras_table = sqlalchemy.Table(
     "cajoneras",
