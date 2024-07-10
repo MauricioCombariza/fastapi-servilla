@@ -24,12 +24,12 @@ class UsuariosUpdate(UsuariosLogin):
     new_password: str
 
 class Usuarios(UsuariosUpdate):
-    nombre: str = Field(..., example="Your Name")
-    direccion: str = Field(..., example="Your Address")
-    telefono: str = Field(..., example="Your Phone")
-    id_bodega: int = Field(..., example=1)
-    rol: int = Field(..., example=1)
-    permiso: bool = Field(..., example=True)
+    nombre: str 
+    direccion: str
+    telefono: str 
+    id_bodega: int 
+    rol: int 
+    permiso: bool
         
 
 class UsuariosIn(Usuarios):
