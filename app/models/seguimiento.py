@@ -49,6 +49,7 @@ class Estado_envio(BaseModel):
 
 class Estado_dinero(BaseModel):
     id: int
+    id_bodega: int
     serial: int
     cod_men: int
     estado: str

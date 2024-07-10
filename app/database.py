@@ -14,6 +14,7 @@ order_table = sqlalchemy.Table(
     sqlalchemy.Column("nombre", sqlalchemy.String),
     sqlalchemy.Column("direccion", sqlalchemy.String),
     sqlalchemy.Column("cod_postal", sqlalchemy.Integer),
+    sqlalchemy.Column("barrio", sqlalchemy.String),
     sqlalchemy.Column("telefono", sqlalchemy.String),
     sqlalchemy.Column("ciudad", sqlalchemy.String),
     sqlalchemy.Column("f_emi", sqlalchemy.DateTime),
@@ -32,6 +33,7 @@ suborder_table = sqlalchemy.Table(
     sqlalchemy.Column("orden", sqlalchemy.Integer),
     sqlalchemy.Column("serial", sqlalchemy.Integer),
     sqlalchemy.Column("id_cliente", sqlalchemy.ForeignKey("clientes.id"), nullable=False),
+    sqlalchemy.Column("id_bodega", sqlalchemy.ForeignKey("bodegas.id"), nullable=False),
     sqlalchemy.Column("id_producto", sqlalchemy.ForeignKey("products.id"), nullable=False),
     sqlalchemy.Column("cantidad", sqlalchemy.Integer),
     sqlalchemy.Column("producto", sqlalchemy.String),
@@ -60,6 +62,7 @@ mensajeros_table = sqlalchemy.Table(
     "mensajeros",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id_bodega", sqlalchemy.ForeignKey("bodegas.id"), nullable=False),
     sqlalchemy.Column("nombre", sqlalchemy.String),
     sqlalchemy.Column("direccion", sqlalchemy.String),
     sqlalchemy.Column("email", sqlalchemy.String, unique=True),
@@ -67,7 +70,7 @@ mensajeros_table = sqlalchemy.Table(
     sqlalchemy.Column("telefono", sqlalchemy.String),
     sqlalchemy.Column("cod_men", sqlalchemy.Integer),
     sqlalchemy.Column("password", sqlalchemy.String),
-    sqlalchemy.Column("permiso", sqlalchemy.Integer),
+    sqlalchemy.Column("permiso", sqlalchemy.Boolean),
 )
 
 usuarios_table = sqlalchemy.Table(
@@ -77,11 +80,12 @@ usuarios_table = sqlalchemy.Table(
     sqlalchemy.Column("nombre", sqlalchemy.String),
     sqlalchemy.Column("direccion", sqlalchemy.String),
     sqlalchemy.Column("telefono", sqlalchemy.String),
+    sqlalchemy.Column("id_bodega", sqlalchemy.ForeignKey("bodegas.id"), nullable=False),
     sqlalchemy.Column("email", sqlalchemy.String, unique=True),
     sqlalchemy.Column("new_password", sqlalchemy.String),
     sqlalchemy.Column("password", sqlalchemy.String),
     sqlalchemy.Column("rol", sqlalchemy.String),
-    sqlalchemy.Column("permiso", sqlalchemy.Integer),
+    sqlalchemy.Column("permiso", sqlalchemy.Boolean),
 )
 
 cliente_table = sqlalchemy.Table(
@@ -95,7 +99,7 @@ cliente_table = sqlalchemy.Table(
     sqlalchemy.Column("nit", sqlalchemy.String),
     sqlalchemy.Column("email", sqlalchemy.String, unique=True),
     sqlalchemy.Column("password", sqlalchemy.String),
-    sqlalchemy.Column("permiso", sqlalchemy.Integer),
+    sqlalchemy.Column("permiso", sqlalchemy.Boolean),
 )
 
 bodega_table = sqlalchemy.Table(
@@ -155,6 +159,7 @@ estado_dinero_table = sqlalchemy.Table(
     "estado_dinero",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id_bodega", sqlalchemy.ForeignKey("bodegas.id"), nullable=False),
     sqlalchemy.Column("serial", sqlalchemy.Integer),
     sqlalchemy.Column("cod_men", sqlalchemy.Integer),
     sqlalchemy.Column("estado", sqlalchemy.String),
@@ -188,7 +193,8 @@ verificacion_dinero_table = sqlalchemy.Table(
 )
 
 
-
-engine = sqlalchemy.create_engine(config.DATABASE_URL, connect_args={"check_same_thread": False})
+connect_args = {"check_same_thread": False} if "sqlite" in config.DATABASE_URL else {}
+engine = sqlalchemy.create_engine(config.DATABASE_URL, connect_args=connect_args)
 metadata.create_all(engine)
-database = databases.Database(config.DATABASE_URL, force_rollback=config.DB_FORCE_ROLLBACK)
+db_args = {"min_size": 1, "max_size": 5} if "postgres" in config.DATABASE_URL else {}
+database = databases.Database(config.DATABASE_URL, force_rollback=config.DB_FORCE_ROLLBACK, **db_args)

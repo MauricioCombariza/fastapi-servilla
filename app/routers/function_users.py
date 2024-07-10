@@ -5,7 +5,8 @@ from app.database import (
     usuarios_table,
     database,
     mensajeros_table,
-    cliente_table
+    cliente_table,
+    bodega_table
 )
 from app.security import (
     get_user,
@@ -13,7 +14,7 @@ from app.security import (
     verify_password,
     get_mensajero
 )
-from app.models.usuarios import ClienteIn
+from app.models.usuarios import ClienteIn, Bodega
 
 
 logger = logging.getLogger(__name__)
@@ -65,3 +66,16 @@ async def registrar_cliente(cliente_data: ClienteIn):
     logger.debug(f"Executing: {query}")
     cliente_id = await database.execute(query)
     return {"id": cliente_id, **cliente_data.dict()}
+
+async def registrar_bodega(bodega_data: Bodega):
+    query = bodega_table.insert().values(
+        nombre=bodega_data.nombre,
+        direccion=bodega_data.direccion,
+        telefono=bodega_data.telefono,
+        permiso=bodega_data.permiso,
+        email=bodega_data.email,
+        password=bodega_data.password,  # Considera hashear la contraseña antes de almacenarla
+    )
+    logger.debug(f"Executing: {query}")
+    bodega_id = await database.execute(query)
+    return {"id": bodega_id, **bodega_data.dict()}

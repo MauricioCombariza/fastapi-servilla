@@ -6,7 +6,7 @@ from app.models.usuarios import (
     Usuarios,
     Cliente,
     Mensajeros,
-    BodegaIn,
+    Bodega,
     UsuariosLogin,
     MensajerosLogin
 ) 
@@ -25,7 +25,8 @@ from app.security import (
 from app.routers.function_users import (
     update_user_password,
     update_mensajero_password,
-    registrar_cliente
+    registrar_cliente,
+    registrar_bodega
 )
 
 logger = logging.getLogger(__name__)
@@ -108,3 +109,13 @@ async def crear_cliente(cliente_data: Cliente):
         return cliente_creado
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+@router.post("/bodegas/", response_model=Bodega, status_code=status.HTTP_201_CREATED)
+async def create_bodega(bodega_data: Bodega):
+    try:
+        # Llama a la función registrar_bodega y pasa los datos de la bodega
+        result = await registrar_bodega(bodega_data)
+        return result
+    except Exception as e:
+        logging.error(f"Error al registrar bodega: {e}")
+        raise HTTPException(status_code=400, detail="Error al registrar la bodega")

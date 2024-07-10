@@ -6,6 +6,8 @@ class Order(BaseModel):
     nombre: str
     direccion: str
     cod_postal: str
+    ciudad: str
+    barrio: str
     telefono: str
     id_cliente: int
     id_suborden: int
@@ -23,6 +25,7 @@ class Suborder(BaseModel):
     orden: int
     serial: int
     id_cliente: int
+    id_bodega: int
     id_producto: int
     cantidad: int
     producto: str

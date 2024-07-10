@@ -10,6 +10,7 @@ class Mensajeros(MensajerosLogin):
     email: str
     sector: str
     telefono: str
+    id_bodega: int
     permiso: bool
 
 class MensajerosIn(Mensajeros):
@@ -26,6 +27,7 @@ class Usuarios(UsuariosUpdate):
     nombre: str = Field(..., example="Your Name")
     direccion: str = Field(..., example="Your Address")
     telefono: str = Field(..., example="Your Phone")
+    id_bodega: int = Field(..., example=1)
     rol: int = Field(..., example=1)
     permiso: bool = Field(..., example=True)
         
@@ -50,7 +52,7 @@ class Bodega(BaseModel):
     nombre: str
     direccion: str
     telefono: str
-    permiso: int
+    permiso: bool
     email: str
     password: str
 
