@@ -4,6 +4,41 @@ from app.config import config
 
 metadata = sqlalchemy.MetaData()
 
+cliente_table = sqlalchemy.Table(
+    "clientes",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("nombre", sqlalchemy.String),
+    sqlalchemy.Column("contacto", sqlalchemy.String),
+    sqlalchemy.Column("direccion", sqlalchemy.String),
+    sqlalchemy.Column("telefono", sqlalchemy.String),
+    sqlalchemy.Column("nit", sqlalchemy.String),
+    sqlalchemy.Column("email", sqlalchemy.String, unique=True),
+    sqlalchemy.Column("password", sqlalchemy.String),
+    sqlalchemy.Column("permiso", sqlalchemy.Boolean),
+)
+
+bodega_table = sqlalchemy.Table(
+    "bodegas",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("nombre", sqlalchemy.String),
+    sqlalchemy.Column("direccion", sqlalchemy.String),
+    sqlalchemy.Column("telefono", sqlalchemy.String),
+    sqlalchemy.Column("permiso", sqlalchemy.Integer),
+    sqlalchemy.Column("email", sqlalchemy.String, unique=True),
+    sqlalchemy.Column("password", sqlalchemy.String),
+)
+
+product_table = sqlalchemy.Table(
+    "products",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id_cliente", sqlalchemy.ForeignKey("clientes.id"), nullable=False),
+    sqlalchemy.Column("nombre", sqlalchemy.String),
+    sqlalchemy.Column("precio", sqlalchemy.Float),
+)
+
 order_table = sqlalchemy.Table(
     "orders",
     metadata,
@@ -49,29 +84,6 @@ product_table = sqlalchemy.Table(
     sqlalchemy.Column("cod_postal", sqlalchemy.Integer),
 )
 
-product_table = sqlalchemy.Table(
-    "products",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("id_cliente", sqlalchemy.ForeignKey("clientes.id"), nullable=False),
-    sqlalchemy.Column("nombre", sqlalchemy.String),
-    sqlalchemy.Column("precio", sqlalchemy.Float),
-)
-
-mensajeros_table = sqlalchemy.Table(
-    "mensajeros",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("id_bodega", sqlalchemy.ForeignKey("bodegas.id"), nullable=False),
-    sqlalchemy.Column("nombre", sqlalchemy.String),
-    sqlalchemy.Column("direccion", sqlalchemy.String),
-    sqlalchemy.Column("email", sqlalchemy.String, unique=True),
-    sqlalchemy.Column("sector", sqlalchemy.String),
-    sqlalchemy.Column("telefono", sqlalchemy.String),
-    sqlalchemy.Column("cod_men", sqlalchemy.Integer),
-    sqlalchemy.Column("password", sqlalchemy.String),
-    sqlalchemy.Column("permiso", sqlalchemy.Boolean),
-)
 
 usuarios_table = sqlalchemy.Table(
     "usuarios",
@@ -88,30 +100,20 @@ usuarios_table = sqlalchemy.Table(
     sqlalchemy.Column("permiso", sqlalchemy.Boolean),
 )
 
-cliente_table = sqlalchemy.Table(
-    "clientes",
+
+mensajeros_table = sqlalchemy.Table(
+    "mensajeros",
     metadata,
     sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("id_bodega", sqlalchemy.ForeignKey("bodegas.id"), nullable=False),
     sqlalchemy.Column("nombre", sqlalchemy.String),
-    sqlalchemy.Column("contacto", sqlalchemy.String),
     sqlalchemy.Column("direccion", sqlalchemy.String),
-    sqlalchemy.Column("telefono", sqlalchemy.String),
-    sqlalchemy.Column("nit", sqlalchemy.String),
     sqlalchemy.Column("email", sqlalchemy.String, unique=True),
+    sqlalchemy.Column("sector", sqlalchemy.String),
+    sqlalchemy.Column("telefono", sqlalchemy.String),
+    sqlalchemy.Column("cod_men", sqlalchemy.Integer),
     sqlalchemy.Column("password", sqlalchemy.String),
     sqlalchemy.Column("permiso", sqlalchemy.Boolean),
-)
-
-bodega_table = sqlalchemy.Table(
-    "bodegas",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("nombre", sqlalchemy.String),
-    sqlalchemy.Column("direccion", sqlalchemy.String),
-    sqlalchemy.Column("telefono", sqlalchemy.String),
-    sqlalchemy.Column("permiso", sqlalchemy.Integer),
-    sqlalchemy.Column("email", sqlalchemy.String, unique=True),
-    sqlalchemy.Column("password", sqlalchemy.String),
 )
 
 cajoneras_table = sqlalchemy.Table(
