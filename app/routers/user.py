@@ -46,7 +46,8 @@ async def register_user(user: Usuarios):
         )
    hashed_password = get_password_hash(user.password)
    # Convertir telefono a entero si es posible y mantener id_bodega como cadena
-   telefono_int = int(user.telefono) if user.telefono.isdigit() else None
+   # Asegúrate de que telefono_int sea None si user.telefono no es un dígito
+   telefono_int = int(user.telefono) if user.telefono and user.telefono.isdigit() else None
    # No convertir id_bodega a entero, mantenerlo como cadena
    id_bodega_str = str(user.id_bodega)  # Asumiendo que siempre es convertible a cadena
    query = usuarios_table.insert().values(
