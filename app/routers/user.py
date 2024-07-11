@@ -32,55 +32,32 @@ from app.routers.function_users import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-@router.post("/register/", status_code=201)
-async def register_user(user: Usuarios):
-    """
-    Registers a new user in the database.
-
-    Args:
-        user: Data for the new user (Usuarios model).
-        session: AsyncSession dependency for database interaction.
-
-    Returns:
-        JSONResponse:
-            - status_code: 201 Created if successful.
-            - content: {"message": "User created"} on success.
-            - status_code: 400 Bad Request with appropriate error message on failure.
-    """
-
-    if user.password != user.new_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Passwords do not match.",
-        )
-
-    existing_user = await get_user(user.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email address already in use.",
-        )
-
+@router.post("/register_users/", status_code=201)
+async def register_users(user: Usuarios):
+    # Verificar si el usuario ya existe
+    if await get_user(user.email):
+        raise HTTPException(status_code=400, detail="User already exists")
+    
+    # Hash de la contraseña
     hashed_password = get_password_hash(user.password)
-
-    # Convert phone number to integer if it's a digit string
-    telefono_int = int(user.telefono) if user.telefono and user.telefono.isdigit() else 0
-
+    
+    # Crear la consulta para insertar el nuevo usuario
     query = usuarios_table.insert().values(
         email=user.email,
         password=hashed_password,
         nombre=user.nombre,
         direccion=user.direccion,
-        telefono=telefono_int,
+        telefono=user.telefono,
         rol=user.rol,
         id_bodega=user.id_bodega,
         permiso=user.permiso,
     )
-
+    
+    # Ejecutar la consulta
     await database.execute(query)
-    await database.commit()
-
-    return JSONResponse({"message": "User created"})
+    
+    # Respuesta indicando la creación exitosa del usuario
+    return {"message": "User created successfully"}
 
 @router.post("/token/")
 async def login(user: UsuariosLogin):
@@ -118,7 +95,7 @@ async def register_mensajeros(mensajero: Mensajeros):
     if await get_mensajero(mensajero.cod_men):
         raise HTTPException(status_code=400, detail="User already exists")
     hashed_password = get_password_hash(mensajero.password)
-    query = mensajeros_table.insert().values(email=mensajero.email, password=hashed_password, nombre=mensajero.nombre, direccion=mensajero.direccion, telefono=mensajero.telefono, cod_men=mensajero.cod_men, permiso=mensajero.permiso, sector=mensajero.sector)
+    query = mensajeros_table.insert().values(email=mensajero.email, id_bodega=mensajero.id_bodega, password=hashed_password, nombre=mensajero.nombre, direccion=mensajero.direccion, telefono=mensajero.telefono, cod_men=mensajero.cod_men, permiso=mensajero.permiso, sector=mensajero.sector)
     logger.debug(f"Executing: {query}")
 
     await database.execute(query)
