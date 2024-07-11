@@ -34,33 +34,53 @@ router = APIRouter()
 
 @router.post("/register/", status_code=201)
 async def register_user(user: Usuarios):
-   if user.password != user.new_password:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"detail": "Error en el password"}
-        )
-   if await get_user(user.email):
-               return JSONResponse(
-            status_code=status.HTTP_400_NOT_FOUND,
-            content={"detail": "El usuario ya existe!!"}
-        )
-   hashed_password = get_password_hash(user.password)
-   telefono_int = int(user.telefono) if user.telefono and user.telefono.isdigit() else 0
-   id_bodega_str = str(user.id_bodega)
-   query = usuarios_table.insert().values(
-       email=user.email, 
-       password=hashed_password, 
-       nombre=str(user.nombre), 
-       direccion=user.direccion, 
-       telefono=telefono_int, 
-       rol=str(user.rol), 
-       id_bodega=id_bodega_str,  # Usar la versión de cadena de id_bodega
-       permiso=user.permiso
-   )
-   logger.debug(f"Executing: {query}")
+    """
+    Registers a new user in the database.
 
-   await database.execute(query)
-   return {"message": "User created"}
+    Args:
+        user: Data for the new user (Usuarios model).
+        session: AsyncSession dependency for database interaction.
+
+    Returns:
+        JSONResponse:
+            - status_code: 201 Created if successful.
+            - content: {"message": "User created"} on success.
+            - status_code: 400 Bad Request with appropriate error message on failure.
+    """
+
+    if user.password != user.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passwords do not match.",
+        )
+
+    existing_user = await get_user(user.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email address already in use.",
+        )
+
+    hashed_password = get_password_hash(user.password)
+
+    # Convert phone number to integer if it's a digit string
+    telefono_int = int(user.telefono) if user.telefono and user.telefono.isdigit() else 0
+
+    query = usuarios_table.insert().values(
+        email=user.email,
+        password=hashed_password,
+        nombre=user.nombre,
+        direccion=user.direccion,
+        telefono=telefono_int,
+        rol=user.rol,
+        id_bodega=user.id_bodega,
+        permiso=user.permiso,
+    )
+
+    await database.execute(query)
+    await database.commit()
+
+    return JSONResponse({"message": "User created"})
 
 @router.post("/token/")
 async def login(user: UsuariosLogin):
