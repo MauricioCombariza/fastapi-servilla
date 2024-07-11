@@ -45,7 +45,8 @@ async def register_user(user: Usuarios):
             content={"detail": "El usuario ya existe!!"}
         )
    hashed_password = get_password_hash(user.password)
-   query = usuarios_table.insert().values(email=user.email, password=hashed_password, nombre=user.nombre, direccion=user.direccion, telefono=user.telefono, rol=user.rol, id_bodega=user.id_bodega, permiso=user.permiso)
+   # Convertir id_bodega a str si la base de datos espera una cadena
+   query = usuarios_table.insert().values(email=user.email, password=hashed_password, nombre=user.nombre, direccion=user.direccion, telefono=user.telefono, rol=user.rol, id_bodega=str(user.id_bodega), permiso=user.permiso)
    logger.debug(f"Executing: {query}")
 
    await database.execute(query)
