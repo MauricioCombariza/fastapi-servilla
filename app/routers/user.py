@@ -45,14 +45,14 @@ async def register_user(user: Usuarios):
             content={"detail": "El usuario ya existe!!"}
         )
    hashed_password = get_password_hash(user.password)
-#    telefono_int = int(user.telefono) if user.telefono and user.telefono.isdigit() else 0
+   telefono_int = int(user.telefono) if user.telefono and user.telefono.isdigit() else 0
    id_bodega_str = str(user.id_bodega)  # Asumiendo que siempre es convertible a cadena
    query = usuarios_table.insert().values(
        email=user.email, 
        password=hashed_password, 
        nombre=str(user.nombre), 
        direccion=user.direccion, 
-       telefono=user.telefono, 
+       telefono=telefono_int, 
        rol=user.rol, 
        id_bodega=id_bodega_str,  # Usar la versión de cadena de id_bodega
        permiso=user.permiso
