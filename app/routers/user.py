@@ -45,10 +45,7 @@ async def register_user(user: Usuarios):
             content={"detail": "El usuario ya existe!!"}
         )
    hashed_password = get_password_hash(user.password)
-   # Convertir telefono a entero si es posible y mantener id_bodega como cadena
-   # Asegúrate de que telefono_int sea None si user.telefono no es un dígito
-   telefono_int = int(user.telefono) if user.telefono and user.telefono.isdigit() else None
-   # No convertir id_bodega a entero, mantenerlo como cadena
+   telefono_int = int(user.telefono) if user.telefono and user.telefono.isdigit() else 0
    id_bodega_str = str(user.id_bodega)  # Asumiendo que siempre es convertible a cadena
    query = usuarios_table.insert().values(
        email=user.email, 
