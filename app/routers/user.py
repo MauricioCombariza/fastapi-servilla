@@ -52,7 +52,7 @@ async def register_user(user: Usuarios):
    query = usuarios_table.insert().values(
        email=user.email, 
        password=hashed_password, 
-       nombre=user.nombre, 
+       nombre=str(user.nombre), 
        direccion=user.direccion, 
        telefono=telefono_int, 
        rol=user.rol, 
