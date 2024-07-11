@@ -49,7 +49,7 @@ async def register_users(user: Usuarios):
         direccion=user.direccion,
         telefono=user.telefono,
         rol=user.rol,
-        id_bodega=user.id_bodega,
+        id_bodega=str(user.id_bodega),
         permiso=user.permiso,
     )
     
