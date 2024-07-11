@@ -46,15 +46,15 @@ async def register_user(user: Usuarios):
         )
    hashed_password = get_password_hash(user.password)
    telefono_int = int(user.telefono) if user.telefono and user.telefono.isdigit() else 0
-   id_bodega_int = int(user.id_bodega)
+   id_bodega_str = str(user.id_bodega)
    query = usuarios_table.insert().values(
        email=user.email, 
        password=hashed_password, 
        nombre=str(user.nombre), 
        direccion=user.direccion, 
        telefono=telefono_int, 
-       rol=user.rol, 
-       id_bodega=id_bodega_int,  # Usar la versión de cadena de id_bodega
+       rol=str(user.rol), 
+       id_bodega=id_bodega_str,  # Usar la versión de cadena de id_bodega
        permiso=user.permiso
    )
    logger.debug(f"Executing: {query}")
