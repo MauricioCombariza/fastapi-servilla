@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.database import database
 from app.logging_conf import configure_logging
 from app.routers.order import router as order_router
@@ -46,8 +47,11 @@ app.include_router(chat_router)
 app.include_router(money_router)
 
 
-
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
     logger.error(f"HTTP Exception: {exc.status_code} - {exc.detail}")
-    return await http_exception_handler(request, exc)
+    # Retorna una respuesta JSON con el código de estado y el detalle del error
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
