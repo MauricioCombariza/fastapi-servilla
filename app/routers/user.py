@@ -49,7 +49,7 @@ async def register_users(user: Usuarios):
         direccion=user.direccion,
         telefono=user.telefono,
         rol=user.rol,
-        id_bodega=str(user.id_bodega),
+        id_bodega=user.id_bodega,
         permiso=user.permiso,
     )
     
@@ -95,7 +95,16 @@ async def register_mensajeros(mensajero: Mensajeros):
     if await get_mensajero(mensajero.cod_men):
         raise HTTPException(status_code=400, detail="User already exists")
     hashed_password = get_password_hash(mensajero.password)
-    query = mensajeros_table.insert().values(email=mensajero.email, id_bodega=mensajero.id_bodega, password=hashed_password, nombre=mensajero.nombre, direccion=mensajero.direccion, telefono=mensajero.telefono, cod_men=mensajero.cod_men, permiso=mensajero.permiso, sector=mensajero.sector)
+    query = mensajeros_table.insert().values(
+        email=mensajero.email,
+        id_bodega=mensajero.id_bodega,
+        password=hashed_password,
+        nombre=mensajero.nombre,
+        direccion=mensajero.direccion,
+        telefono=mensajero.telefono,
+        cod_men=mensajero.cod_men,
+        permiso=mensajero.permiso,
+        sector=mensajero.sector)
     logger.debug(f"Executing: {query}")
 
     await database.execute(query)
