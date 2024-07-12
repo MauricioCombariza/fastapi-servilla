@@ -111,7 +111,7 @@ usuarios_table = sqlalchemy.Table(
     sqlalchemy.Column("email", sqlalchemy.String, unique=True),
     sqlalchemy.Column("new_password", sqlalchemy.String),
     sqlalchemy.Column("password", sqlalchemy.String),
-    sqlalchemy.Column("rol", sqlalchemy.String),
+    sqlalchemy.Column("rol", sqlalchemy.Integer),
     sqlalchemy.Column("permiso", sqlalchemy.Boolean),
 )
 
