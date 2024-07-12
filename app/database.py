@@ -63,6 +63,7 @@ order_table = sqlalchemy.Table(
     sqlalchemy.Column("serial", sqlalchemy.Integer),
     sqlalchemy.Column("nombre", sqlalchemy.String),
     sqlalchemy.Column("direccion", sqlalchemy.String),
+    sqlalchemy.Column("id_bodega", sqlalchemy.Integer),
     sqlalchemy.Column("cod_postal", sqlalchemy.Integer),
     sqlalchemy.Column("barrio", sqlalchemy.String),
     sqlalchemy.Column("telefono", sqlalchemy.String),

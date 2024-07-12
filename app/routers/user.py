@@ -17,7 +17,6 @@ from app.security import (
     authenticate_user,
     authenticate_mensajero,
     create_access_token,
-    get_user_role,
     get_user_username,
     get_mensajero,
     create_access_token_mensajero,

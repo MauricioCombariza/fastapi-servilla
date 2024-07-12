@@ -111,7 +111,7 @@ def rename_and_adjust_columns(df, client_number):
         # Añadir la columna 'id_cliente' con el valor de client_number
         df = df.assign(id_cliente=client_number)
         
-        column_order = ['id_cliente','orden','serial', 'id_guia', 'nombre', 'ciudad', 'direccion', 'telefono', 'f_emi', 'forma_de_pago', 'recaudo', 'contenido']
+        column_order = ['id_cliente','orden','serial', 'id_guia', 'nombre', 'ciudad', 'id_bodega', 'direccion', 'telefono', 'f_emi', 'forma_de_pago', 'recaudo', 'contenido']
         # Reordenar las columnas en el DataFrame
         df = df[column_order]
     else:

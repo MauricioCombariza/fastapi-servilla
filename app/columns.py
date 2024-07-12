@@ -3,6 +3,7 @@ column_names = {
         'ID GUIA': 'id_guia',
         'DESTINATARIO': 'nombre',
         'CIUDAD': 'ciudad',
+        'ID_BODEGA': 'id_bodega',
         'DIRECCION DESTINATARIO': 'direccion',
         'TELEFONO': 'telefono',
         'FECHA': 'f_emi',

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/create_order/")
-async def create_order(order_number: int, file: UploadFile = File(...)):
+async def create_order(order_number: int, id_cliente: int, file: UploadFile = File(...)):
     logger.info(f"Processing file for order {order_number}")
     if file.content_type != 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
         return JSONResponse(status_code=400, content={"message": "This API only accepts Excel files."})
@@ -56,7 +56,7 @@ async def create_order(order_number: int, file: UploadFile = File(...)):
             # Si la función retorna un string, significa que el número de orden ya existe
             return JSONResponse(status_code=400, content={"message": df_updated})
         
-        df_updated1 = rename_and_adjust_columns(df_updated, 1001)
+        df_updated1 = rename_and_adjust_columns(df_updated, id_cliente)
         await insert_df_into_table(database, order_table.name, df_updated1)
 
         nuevas_filas = []

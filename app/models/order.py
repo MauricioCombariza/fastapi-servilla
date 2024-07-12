@@ -7,6 +7,7 @@ class Order(BaseModel):
     direccion: str
     cod_postal: str
     ciudad: str
+    id_bodega: int
     barrio: str
     telefono: str
     id_cliente: int
