@@ -27,7 +27,7 @@ class Usuarios(UsuariosUpdate):
     nombre: str 
     direccion: str
     telefono: str 
-    id_bodega: int 
+    # id_bodega: int 
     rol: int 
     permiso: bool
         
