@@ -90,7 +90,7 @@
 #         except Exception as e:
 #             print(f"Error al enviar el mensaje a {phone_number}: {e}")
 
-# async def update_cajoneras_from_whatsapp(serial: int):
+# async def update_cajoneras_from_whatsapp(serial: str):
 #     # Crear la consulta SQL para actualizar la columna envio_whatsapp en la tabla cajoneras_table
 #     query = (
 #         update(cajoneras_table).

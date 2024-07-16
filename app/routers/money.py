@@ -18,7 +18,13 @@ router = APIRouter()
 # Asumiendo que las funciones necesarias están definidas e importadas correctamente
 
 @router.post("/pagos/{serial}")
-async def pago_endpoint(serial: int, cod_men:int, valor_consignacion: float, actualizado_por: str, consignatario: str, tipo_de_pago: str):
+async def pago_endpoint(
+    serial: str,
+    cod_men:int,
+    valor_consignacion: float,
+    actualizado_por: str,
+    consignatario: str,
+    tipo_de_pago: str):
     # Verificar la existencia del serial
     serial_exists = await find_serial(serial)
     if not serial_exists:
@@ -31,7 +37,13 @@ async def pago_endpoint(serial: int, cod_men:int, valor_consignacion: float, act
 
     # Insertar estado de dinero
     # Asumiendo que la función `insertar_estado_dinero` necesita parámetros adicionales, los cuales deberían ser definidos o obtenidos previamente
-    await insertar_estado_dinero(serial, cod_men=cod_men,actualizado_por=actualizado_por, consignatario=consignatario, valor_consignacion=valor_consignacion, tipo_de_pago=tipo_de_pago)
+    await insertar_estado_dinero(
+        serial,
+        cod_men=cod_men,
+        actualizado_por=actualizado_por,
+        consignatario=consignatario,
+        valor_consignacion=valor_consignacion,
+        tipo_de_pago=tipo_de_pago)
 
     # Actualizar motivo en suborder_table
     await update_motivo_suborder(serial, nuevo_motivo="e")
@@ -43,7 +55,7 @@ async def pago_endpoint(serial: int, cod_men:int, valor_consignacion: float, act
     return {"message": "Proceso completado con éxito."}
 
 @router.get("/check-serial-money/{serial}")
-async def check_serial_exists(serial: int):
+async def check_serial_exists(serial: str):
     result = await serial_existe(serial)
     return result
 
@@ -55,7 +67,7 @@ async def obtener_dinero_verificado(tipo_de_pago: str):
 # Definir el modelo Pydantic para los datos de entrada
 
 @router.put("/actualizar-estado-dinero/{serial}")
-async def update_estado_dinero_endpoint(serial: int, tipo_de_pago: str, verificacion: bool, verificado_por: str, numero_nequi: str):
+async def update_estado_dinero_endpoint(serial: str, tipo_de_pago: str, verificacion: bool, verificado_por: str, numero_nequi: str):
     try:
         response = await actualizar_estado_dinero(serial, tipo_de_pago, verificacion, verificado_por, numero_nequi)
         return response

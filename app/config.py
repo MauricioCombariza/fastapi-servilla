@@ -1,10 +1,13 @@
 from typing import Optional
 from functools import lru_cache
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
 load_dotenv()
 
+url = os.getenv('URL')
+api = os.getenv('API')
 
 class BaseConfig(BaseSettings):
     ENV_STATE: Optional[str] = None

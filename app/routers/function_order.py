@@ -37,16 +37,16 @@ async def create_order_function(order: Order):
     last_record_id = await database.execute(query)
     return {**data, "id": last_record_id}
 
-async def find_serial_true(serial: int):
+async def find_serial_true(serial: str):
     query = order_table.select().where(order_table.c.serial == serial)
     result = await database.fetch_one(query)
     return {"ok": result is not None}
 
-async def find_serial(serial: int):
+async def find_serial(serial: str):
     query = order_table.select().where(order_table.c.serial == serial)
     return await database.fetch_one(query)
 
-async def find_serial_cajoneras(serial: int):
+async def find_serial_cajoneras(serial: str):
     query = cajoneras_table.select().where(cajoneras_table.c.serial == serial)
     return await database.fetch_one(query)
 
@@ -59,7 +59,7 @@ async def create_new_comments_function(comentario: Comentario):
     last_record_id = await database.execute(query)
     return {**data, "id": last_record_id}
 
-async def get_comments_by_serial_function(serial: int):
+async def get_comments_by_serial_function(serial: str):
     query = comentario_table.select().where(comentario_table.c.serial == serial)
     return await database.fetch_all(query)
 
@@ -73,6 +73,19 @@ async def get_seriales_pendientes_por_mensajero(cod_men):
     async with estado_envio_table.execute(query, [cod_men]) as cursor:
         seriales = [row[0] for row in await cursor.fetchall()]
     return seriales
+
+async def print_table_as_dataframe(table_name: str):
+    # Construir la consulta SQL
+    query = f"SELECT * FROM {table_name}"
+    
+    # Ejecutar la consulta y obtener los resultados
+    results = await database.fetch_all(query)
+    
+    # Convertir los resultados en un DataFrame de pandas
+    df = pd.DataFrame(results)
+    
+    # Imprimir el DataFrame
+    print(df)
 
 async def get_last_id(table):
     query = select(func.max(table.c.id))
@@ -118,14 +131,14 @@ def rename_and_adjust_columns(df, client_number):
         print(f"Cliente {client_number} no encontrado.")
     return df
 
-
 async def insert_df_into_table(db, table_name: str, df: pd.DataFrame):
-    
-    # Identificar y convertir columnas de fecha/hora a string
-    datetime_columns = [col for col in df.columns if pd.api.types.is_datetime64_any_dtype(df[col])]
-    for col in datetime_columns:
-        df[col] = pd.to_datetime(df[col]).apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if not pd.isnull(x) else None)
+    # Suponiendo que df es tu DataFrame y 'precio' es la columna a convertir
+    df['recaudo'] = df['recaudo'].replace({'\$': '', ',': ''}, regex=True).astype(float)
+    df['id_guia'] = df['id_guia'].astype(str)
+    df['serial'] = df['serial'].astype(str)
+    df['telefono'] = df['telefono'].astype(str)
 
+    print(df)
     # Convierte el DataFrame a una lista de diccionarios para la inserción
     list_of_dicts = df.to_dict(orient="records")
 
@@ -230,7 +243,7 @@ async def find_mensajero(mensajero: int):
     return await database.fetch_one(query)
    
 
-async def create_cajonera(serial: int, cod_men: int, actualizado_por: str):
+async def create_cajonera(serial: str, cod_men: int, actualizado_por: str):
     # Crear la consulta SQL para insertar en la tabla cajoneras
     data = {"serial": serial, "cod_men": cod_men, "fecha": datetime.now(), "envio_whatsApp": False, "actualizado_por": actualizado_por}
     query = (
@@ -242,7 +255,7 @@ async def create_cajonera(serial: int, cod_men: int, actualizado_por: str):
     last_record_id = await database.execute(query)
     return {**data, "id": last_record_id}
 
-async def create_historial_transacciones(serial: int, estado_envio: str, actualizado_por: str):
+async def create_historial_transacciones(serial: str, estado_envio: str, actualizado_por: str):
     # Crear la consulta SQL para insertar en la tabla historial_transacciones_table
     data = {"serial": serial, "estado_envio": estado_envio, "fecha_actualizacion": datetime.now(), "actualizado_por": actualizado_por}
     query = (
@@ -254,7 +267,7 @@ async def create_historial_transacciones(serial: int, estado_envio: str, actuali
     last_record_id = await database.execute(query)
     return {**data, "id": last_record_id}
 
-async def update_motivo_suborder(serial: int, nuevo_motivo: str):
+async def update_motivo_suborder(serial: str, nuevo_motivo: str):
     # Crear la consulta SQL para actualizar el motivo en la tabla suborder_table
     query = (
         update(suborder_table).
@@ -266,7 +279,7 @@ async def update_motivo_suborder(serial: int, nuevo_motivo: str):
     await database.execute(query)
     return {"serial": serial, "motivo": nuevo_motivo}
 
-async def update_motivo_codmen_order(serial: int, nuevo_cod_men: int, motivo: str):
+async def update_motivo_codmen_order(serial: str, nuevo_cod_men: int, motivo: str):
     # Crear la consulta SQL para actualizar el cod_men y motivo en la tabla order_table
     query = (
         update(order_table).

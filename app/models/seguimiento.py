@@ -5,7 +5,7 @@ from app.models.order import Order
 
 class Cajoneras(BaseModel):
     model_config = ConfigDict(from_attributes= True)
-    serial: int
+    serial: str
     cod_men: int 
     fecha: datetime
     actualizado_por: str
@@ -17,7 +17,7 @@ class CajonerasId(Cajoneras):
 
 class Historial_transacciones(BaseModel):
     model_config = ConfigDict(from_attributes= True)
-    serial: int
+    serial: str
     estado_envio: str
     fecha_actualizacion: datetime
     actualizado_por: str
@@ -27,7 +27,7 @@ class Historial_transaccionesId(Historial_transacciones):
     id: int
 
 class Comentario(BaseModel):
-    serial: int
+    serial: str
     comentario: str
     fecha: datetime
     actualizado_por: str
@@ -42,7 +42,7 @@ class Comentario_envio(BaseModel):
 
 class Estado_envio(BaseModel):
     id: int
-    serial: int
+    serial: str
     estado: str
     fecha: datetime
     actualizado_por: str
@@ -50,7 +50,7 @@ class Estado_envio(BaseModel):
 class Estado_dinero(BaseModel):
     id: int
     id_bodega: int
-    serial: int
+    serial: str
     cod_men: int
     estado: str
     fecha: datetime
@@ -69,7 +69,7 @@ class Estado_dinero(BaseModel):
 
 class Verificacion_dinero(BaseModel):
     id: int
-    serial: int
+    serial: str
     estado: str
     fecha: datetime
     actualizado_por: str

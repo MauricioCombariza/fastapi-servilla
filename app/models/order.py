@@ -2,7 +2,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class Order(BaseModel):
-    serial: int
+    serial: str
+    id_guia: str
     nombre: str
     direccion: str
     cod_postal: str
@@ -15,7 +16,7 @@ class Order(BaseModel):
     cod_men: int
     motivo: str
     precio: float
-    recaudo: str
+    recaudo: float
 
 class OrderId(Order):
     model_config = ConfigDict(from_attributes= True)
@@ -24,7 +25,7 @@ class OrderId(Order):
 class Suborder(BaseModel):
     id: int
     orden: int
-    serial: int
+    serial: str
     id_cliente: int
     id_bodega: int
     id_producto: int

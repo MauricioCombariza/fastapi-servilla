@@ -17,7 +17,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter()
 
 @router.post("/cajoneras/")
-async def cajoneras_endpoint(serial: int, cod_men: int, nuevo_motivo: str, actualizado_por: str):
+async def cajoneras_endpoint(serial: str, cod_men: int, nuevo_motivo: str, actualizado_por: str):
     # 1. Llamar a find_mensajero
     mensajero = await find_mensajero(cod_men)
     if not mensajero:
@@ -57,7 +57,7 @@ async def cajoneras_endpoint(serial: int, cod_men: int, nuevo_motivo: str, actua
     return {"message": "Proceso exitoso"}
 
 @router.get("/find_serial/{serial}")
-async def get_serial(serial: int):
+async def get_serial(serial: str):
     result = await find_serial_true(serial)
     return result
 

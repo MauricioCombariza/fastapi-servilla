@@ -48,7 +48,7 @@ async def register_users(user: Usuarios):
         direccion=user.direccion,
         telefono=user.telefono,
         id_bodega=user.id_bodega,
-        rol=str(user.rol),
+        rol=user.rol,
         permiso=user.permiso,
     )
     

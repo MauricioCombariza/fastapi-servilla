@@ -39,7 +39,7 @@ table_mapping = {
 
 
 @router.put("/update-cajoneras/{serial}")
-async def update_cajoneras_endpoint(serial: int):
+async def update_cajoneras_endpoint(serial: str):
     # try:
     #     result = await update_cajoneras_from_whatsapp(serial)
     #     return result

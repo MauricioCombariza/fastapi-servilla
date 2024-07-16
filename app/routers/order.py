@@ -20,7 +20,8 @@ from app.routers.function_order import (
     get_comments_by_serial_function,
     get_seriales_pendientes_por_mensajero,
     eliminar_orden_por_numero,
-    eliminar_suborden_por_numero
+    eliminar_suborden_por_numero,
+    print_table_as_dataframe,
 )
 from typing import List
 import pandas as pd
@@ -64,7 +65,7 @@ async def create_order(order_number: int, id_cliente: int, file: UploadFile = Fi
             nuevas_filas.extend(expandir_contenido(row))
         df_inventario = pd.DataFrame(nuevas_filas)
         df_inventario['producto'] = df_inventario['producto'].str.lower().apply(unidecode.unidecode)
-        df_inventario = agregar_producto(1001, df_inventario, orden=order_number)
+        df_inventario = agregar_producto(id_cliente, df_inventario, orden=order_number)
         logger.debug(f"Dataframe: {df_inventario.head()}")
 
         await insert_df_into_table(database, suborder_table.name, df_inventario)
@@ -97,7 +98,7 @@ async def get_all_comments():
     
 
 @router.get("/serial/{serial}/comment", response_model=List[Comentario])
-async def get_comments_by_serial(serial: int):
+async def get_comments_by_serial(serial: str):
     logger.info(f"Getting comments for serial {serial}")
     comentarios = await get_comments_by_serial_function(serial)
     logger.debug(f"Comentarios: {comentarios}")
@@ -139,3 +140,7 @@ async def eliminar_orden_y_suborden(orden_id: int):
     except Exception as e:
         # En caso de error, devuelve un mensaje de error
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/print-table/{table_name}")
+async def endpoint_print_table_as_dataframe(table_name: str):
+    await print_table_as_dataframe(table_name)
+    return {"message": f"Printed {table_name} as DataFrame"}
