@@ -66,8 +66,14 @@ async def create_order(order_number: int, id_cliente: int, file: UploadFile = Fi
         # print("Por aqui paso despues de rename_and_adjust_columns")
         logger.debug("DataFrame columns after renaming and adjusting: %s", df_updated1.columns)
 
-        # if 'f_emi' in df_updated1.columns:
-        #     df_updated1['f_emi'] = df_updated1['f_emi'].dt.strftime('%Y-%m-%dT%H:%M:%S')
+        if 'recaudo' in df.columns:
+            # Primero, elimina el símbolo del dólar y cualquier otro carácter no numérico excepto la coma
+            df['recaudo'] = df['recaudo'].replace({'\$': '', '\.': ''}, regex=True)
+            # Luego, reemplaza las comas por puntos para adecuar el formato decimal
+            df['recaudo'] = df['recaudo'].replace({',': '.'}, regex=True).astype(float)
+        else:
+            # Opcional: Maneja el caso de que 'recaudo' no exista, por ejemplo, asignando un valor predeterminado
+            df['recaudo'] = 0.0  # Asigna un valor
         if 'recaudo' in df.columns:
             df['recaudo'] = df['recaudo'].replace({'\$': '', ',': ''}, regex=True).astype(float)
         else:
