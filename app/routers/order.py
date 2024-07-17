@@ -35,7 +35,9 @@ logger = logging.getLogger(__name__)
 
 @router.post("/create_order/")
 async def create_order(order_number: int, id_cliente: int, file: UploadFile = File(...)):
-    logger.info(f"Processing file for order {order_number}")
+    order_number_int = int(order_number)
+    id_cliente_int = int(id_cliente)
+    logger.info(f"Processing file for order {order_number_int}")
     if file.content_type != 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
         return JSONResponse(status_code=400, content={"message": "This API only accepts Excel files."})
     
@@ -44,77 +46,41 @@ async def create_order(order_number: int, id_cliente: int, file: UploadFile = Fi
         df = pd.read_excel(BytesIO(contents))
         logger.debug("DataFrame columns after reading Excel: %s", df.columns)
 
-        # print("Por aqui paso")
         last_id = await get_last_id(order_table)
-        if last_id is None:
-            last_id = 0
         df = add_serial_numbers(last_id, df)
-        # print("Por aqui paso despues de add serial numbers")
-        
-        try:
-            df_updated = await check_order_and_update_df(order_number, df)
-            print("Por aqui paso despues de check_order_and_update_df")
-        except KeyError as e:
-            if str(e) == "'recaudo'":
-                return JSONResponse(status_code=500, content={"message": "'recaudo' key error in check_order_and_update_df"})
-            raise
-        
+        df_updated = await check_order_and_update_df(order_number_int, df)        
+                
         if isinstance(df_updated, str):
             return JSONResponse(status_code=400, content={"message": df_updated})
         
-        df_updated1 = rename_and_adjust_columns(df_updated, id_cliente)
-        # print("Por aqui paso despues de rename_and_adjust_columns")
+        df_updated1 = rename_and_adjust_columns(df_updated, id_cliente_int)
         logger.debug("DataFrame columns after renaming and adjusting: %s", df_updated1.columns)
+        # Antes de la primera inserción
+        print(f"Pre-insert check for order_table: {df_updated1.dtypes}")
 
-        if 'recaudo' in df.columns:
+        # Ajuste: Mover la limpieza y conversión para después de obtener df_updated1 y aplicarlo a df_updated1
+        if 'recaudo' in df_updated1.columns:
             # Primero, elimina el símbolo del dólar y cualquier otro carácter no numérico excepto la coma
-            df['recaudo'] = df['recaudo'].replace({'\$': '', '\.': ''}, regex=True)
+            df_updated1['recaudo'] = df_updated1['recaudo'].replace({'\$': '', '\.': ''}, regex=True)
             # Luego, reemplaza las comas por puntos para adecuar el formato decimal
-            df['recaudo'] = df['recaudo'].replace({',': '.'}, regex=True).astype(float)
+            df_updated1['recaudo'] = df_updated1['recaudo'].replace({',': '.'}, regex=True).astype(float)
         else:
-            # Opcional: Maneja el caso de que 'recaudo' no exista, por ejemplo, asignando un valor predeterminado
-            df['recaudo'] = 0.0  # Asigna un valor
-        if 'recaudo' in df.columns:
-            df['recaudo'] = df['recaudo'].replace({'\$': '', ',': ''}, regex=True).astype(float)
-        else:
-            # Opcional: Puedes manejar el caso de que 'recaudo' no exista, por ejemplo, asignando un valor predeterminado
-            df['recaudo'] = 0.0  # Asigna un valor predeterminado o maneja de otra manera
+            # Opcional: Maneja el caso de que 'recaudo' no exista en df_updated1, por ejemplo, asignando un valor predeterminado
+            df_updated1['recaudo'] = 0.0  # Asigna un valor
 
-        try:
-            await insert_df_into_table(database, order_table.name, df_updated1)
-        except KeyError as e:
-            if str(e) == "'recaudo'":
-                return JSONResponse(status_code=500, content={"message": "'recaudo' key error in incert_df_into_table"})
-            raise
-
+        await insert_df_into_table(database, order_table.name, df_updated1)
         nuevas_filas = []
         for _, row in df_updated1.iterrows():
-            try:
-                nuevas_filas.extend(expandir_contenido(row))
-            except KeyError as e:
-                if str(e) == "'recaudo'":
-                    return JSONResponse(status_code=500, content={"message": "'recaudo' key error in expandir_contenido"})
-                raise
-        
+            nuevas_filas.extend(expandir_contenido(row))
+            
         df_inventario = pd.DataFrame(nuevas_filas)
         df_inventario['producto'] = df_inventario['producto'].str.lower().apply(unidecode.unidecode)
-        
-        try:
-            df_inventario = agregar_producto(id_cliente, df_inventario, orden=order_number)
-        except KeyError as e:
-            if str(e) == "'recaudo'":
-                return JSONResponse(status_code=500, content={"message": "'recaudo' key error in agregar_producto"})
-            raise
-        
+        df_inventario = agregar_producto(cliente=id_cliente_int, df=df_inventario, orden=order_number_int)
+
+        print(f"Pre-insert check for suborder_table: {df_inventario.dtypes}")
         logger.debug(f"Dataframe: {df_inventario.head()}")
-
-        try:
-            await insert_df_into_table(database, suborder_table.name, df_inventario)
-        except KeyError as e:
-            if str(e) == "'recaudo'":
-                return JSONResponse(status_code=500, content={"message": "'recaudo' key error in insert_df_into_table"})
-            raise
-
+        await insert_df_into_table(database, suborder_table.name, df_inventario)
+        
         return {"message": "File processed successfully", "data": df_updated.head().to_dict()}
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})

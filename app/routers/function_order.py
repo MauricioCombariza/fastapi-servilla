@@ -89,11 +89,10 @@ async def print_table_as_dataframe(table_name: str):
 
 async def get_last_id(table):
     query = select(func.max(table.c.id))
-    last_id_result = await database.fetch_one(query)
-    if last_id_result:
-        return last_id_result[0]
-    else:
-        return None
+    result = await database.execute(query)
+    # Directamente asignar el resultado a last_id, manejando el caso de None
+    last_id = int(result) if result is not None else 0
+    return last_id
 
 def add_serial_numbers(last_id, df):
     # Asegúrate de que el índice del DataFrame comience en 1 si es necesario
@@ -161,8 +160,11 @@ async def insert_df_into_table(db, table_name: str, df: pd.DataFrame):
     # Ejecuta la consulta para cada fila del DataFrame
     async with db.transaction():
         for record in list_of_dicts:
+            # Asegúrate de que los valores se pasen correctamente a la consulta
+            # Convertir valores a los tipos adecuados según sea necesario
+            # Aquí se asume que 'db.execute' puede manejar un diccionario de valores directamente
+            # Si no es el caso, ajusta esta parte según la API de tu base de datos
             await db.execute(query=query, values=record)
-
 
 def expandir_contenido(row):
     # Extrae todas las secuencias de 'cantidad * producto.' de 'contenido'
@@ -171,9 +173,10 @@ def expandir_contenido(row):
     # Crea una nueva fila por cada secuencia de 'cantidad * producto.'
     nuevas_filas = []
     for cantidad, producto in matches:
+        cantidad = int(cantidad)
         # Si aparece la palabra 'Dúo', multiplica la cantidad por dos y borra la palabra 'Dúo'
         if 'Dúo' in producto:
-            cantidad = str(int(cantidad) * 2)
+            cantidad = cantidad * 2
             producto = producto.replace('Dúo', '').strip()
 
         # Si aparece la palabra 'Crema', borra la palabra 'Crema'
@@ -205,10 +208,10 @@ def agregar_producto(cliente: int, df: pd.DataFrame, orden: int) -> pd.DataFrame
     df['alias'] = df['producto'].apply(lambda x: buscar_alias(x, df_producto))
     df['id_cliente'] = cliente
     df['orden'] = orden
-    
-    # Crear una nueva columna 'alias' en df que contenga el 'alias' de df_producto donde 'producto' coincide
-    # df['alias'] = df['id_producto'].map(df_producto.set_index('producto')['alias'])
     df['motivo'] = 'j'
+    df['id_producto'] = df['id_producto'].astype(int)
+    df['id_cliente'] = df['id_cliente'].astype(int)
+    df['orden'] = df['orden'].astype(int)
     return df
 
 def buscar_producto(producto, df_producto):
