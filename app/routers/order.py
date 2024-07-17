@@ -33,7 +33,6 @@ from app.security import get_current_user, oauth2_scheme
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-
 @router.post("/create_order/")
 async def create_order(order_number: int, id_cliente: int, file: UploadFile = File(...)):
     logger.info(f"Processing file for order {order_number}")
@@ -41,40 +40,130 @@ async def create_order(order_number: int, id_cliente: int, file: UploadFile = Fi
         return JSONResponse(status_code=400, content={"message": "This API only accepts Excel files."})
     
     try:
-        # Lee el contenido del archivo en un DataFrame
         contents = await file.read()
         df = pd.read_excel(BytesIO(contents))
-        
-        # Obtiene el último ID y añade números de serie
+        logger.debug("DataFrame columns after reading Excel: %s", df.columns)
+
+        # print("Por aqui paso")
         last_id = await get_last_id(order_table)
         if last_id is None:
             last_id = 0
         df = add_serial_numbers(last_id, df)
+        # print("Por aqui paso despues de add serial numbers")
         
-        # Verifica y actualiza el DataFrame con el número de orden
-        df_updated = await check_order_and_update_df(order_number, df)
+        try:
+            df_updated = await check_order_and_update_df(order_number, df)
+            print("Por aqui paso despues de check_order_and_update_df")
+        except KeyError as e:
+            if str(e) == "'recaudo'":
+                return JSONResponse(status_code=500, content={"message": "'recaudo' key error in check_order_and_update_df"})
+            raise
+        
         if isinstance(df_updated, str):
-            # Si la función retorna un string, significa que el número de orden ya existe
             return JSONResponse(status_code=400, content={"message": df_updated})
         
         df_updated1 = rename_and_adjust_columns(df_updated, id_cliente)
-        await insert_df_into_table(database, order_table.name, df_updated1)
+        # print("Por aqui paso despues de rename_and_adjust_columns")
+        logger.debug("DataFrame columns after renaming and adjusting: %s", df_updated1.columns)
+
+        if 'f_emi' in df_updated1.columns:
+            df_updated1['f_emi'] = df_updated1['f_emi'].dt.strftime('%Y-%m-%dT%H:%M:%S')
+        if 'recaudo' in df.columns:
+            df['recaudo'] = df['recaudo'].replace({'\$': '', ',': ''}, regex=True).astype(float)
+        else:
+            # Opcional: Puedes manejar el caso de que 'recaudo' no exista, por ejemplo, asignando un valor predeterminado
+            df['recaudo'] = 0.0  # Asigna un valor predeterminado o maneja de otra manera
+
+        try:
+            await insert_df_into_table(database, order_table.name, df_updated1)
+            # print("Por aqui paso despues de insert_df_into_table")
+        except KeyError as e:
+            if str(e) == "'recaudo'":
+                return JSONResponse(status_code=500, content={"message": "'recaudo' key error in incert_df_into_table"})
+            raise
 
         nuevas_filas = []
         for _, row in df_updated1.iterrows():
-            nuevas_filas.extend(expandir_contenido(row))
+            try:
+                nuevas_filas.extend(expandir_contenido(row))
+                # print("Por aqui paso despues de expandir_contenido")
+            except KeyError as e:
+                if str(e) == "'recaudo'":
+                    return JSONResponse(status_code=500, content={"message": "'recaudo' key error in expandir_contenido"})
+                raise
+        
         df_inventario = pd.DataFrame(nuevas_filas)
         df_inventario['producto'] = df_inventario['producto'].str.lower().apply(unidecode.unidecode)
-        df_inventario = agregar_producto(id_cliente, df_inventario, orden=order_number)
+        
+        try:
+            df_inventario = agregar_producto(id_cliente, df_inventario, orden=order_number)
+            # print("Por aqui paso despues de agregar_producto")
+        except KeyError as e:
+            if str(e) == "'recaudo'":
+                return JSONResponse(status_code=500, content={"message": "'recaudo' key error in agregar_producto"})
+            raise
+        
         logger.debug(f"Dataframe: {df_inventario.head()}")
 
-        await insert_df_into_table(database, suborder_table.name, df_inventario)
+        try:
+            await insert_df_into_table(database, suborder_table.name, df_inventario)
+            # print("Por aqui paso despues de insert_df_into_table")
+        except KeyError as e:
+            if str(e) == "'recaudo'":
+                return JSONResponse(status_code=500, content={"message": "'recaudo' key error in insert_df_into_table"})
+            raise
 
         return {"message": "File processed successfully", "data": df_updated.head().to_dict()}
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
     finally:
         await file.close()
+
+# @router.post("/create_order/")
+# async def create_order(order_number: int, id_cliente: int, file: UploadFile = File(...)):
+#     logger.info(f"Processing file for order {order_number}")
+#     if file.content_type != 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+#         return JSONResponse(status_code=400, content={"message": "This API only accepts Excel files."})
+    
+#     try:
+#         # Lee el contenido del archivo en un DataFrame
+#         contents = await file.read()
+#         df = pd.read_excel(BytesIO(contents))
+        
+#         # Obtiene el último ID y añade números de serie
+#         last_id = await get_last_id(order_table)
+#         if last_id is None:
+#             last_id = 0
+#         df = add_serial_numbers(last_id, df)
+        
+#         # Verifica y actualiza el DataFrame con el número de orden
+#         df_updated = await check_order_and_update_df(order_number, df)
+#         if isinstance(df_updated, str):
+#             # Si la función retorna un string, significa que el número de orden ya existe
+#             return JSONResponse(status_code=400, content={"message": df_updated})
+        
+#         df_updated1 = rename_and_adjust_columns(df_updated, id_cliente)
+#         if 'f_emi' in df_updated1.columns:
+#             # Convierte la columna f_emi a string en formato ISO 8601
+#             df_updated1['f_emi'] = df_updated1['f_emi'].dt.strftime('%Y-%m-%dT%H:%M:%S')
+        
+#         await insert_df_into_table(database, order_table.name, df_updated1)
+
+#         nuevas_filas = []
+#         for _, row in df_updated1.iterrows():
+#             nuevas_filas.extend(expandir_contenido(row))
+#         df_inventario = pd.DataFrame(nuevas_filas)
+#         df_inventario['producto'] = df_inventario['producto'].str.lower().apply(unidecode.unidecode)
+#         df_inventario = agregar_producto(id_cliente, df_inventario, orden=order_number)
+#         logger.debug(f"Dataframe: {df_inventario.head()}")
+
+#         await insert_df_into_table(database, suborder_table.name, df_inventario)
+
+#         return {"message": "File processed successfully", "data": df_updated.head().to_dict()}
+#     except Exception as e:
+#         return JSONResponse(status_code=500, content={"message": str(e)})
+#     finally:
+#         await file.close()
 @router.post("/comments/", response_model=ComentarioId, status_code=201)
 async def create_new_comments(comentario: Comentario, current_user: Annotated[UsuariosIn, Depends(get_current_user)]):
     logger.info(f"Creating new comment: {comentario}")

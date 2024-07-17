@@ -124,7 +124,20 @@ def rename_and_adjust_columns(df, client_number):
         # Añadir la columna 'id_cliente' con el valor de client_number
         df = df.assign(id_cliente=client_number)
         
-        column_order = ['id_cliente','orden','serial', 'id_guia', 'nombre', 'ciudad', 'id_bodega', 'direccion', 'telefono', 'f_emi', 'forma_de_pago', 'recaudo', 'contenido']
+        column_order = [
+            'id_cliente',
+            'orden',
+            'serial',
+            'id_guia',
+            'nombre',
+            'ciudad',
+            'id_bodega',
+            'direccion',
+            'telefono',
+            'f_emi',
+            'forma_de_pago',
+            'recaudo',
+            'contenido']
         # Reordenar las columnas en el DataFrame
         df = df[column_order]
     else:
@@ -132,13 +145,11 @@ def rename_and_adjust_columns(df, client_number):
     return df
 
 async def insert_df_into_table(db, table_name: str, df: pd.DataFrame):
-    # Suponiendo que df es tu DataFrame y 'precio' es la columna a convertir
-    df['recaudo'] = df['recaudo'].replace({'\$': '', ',': ''}, regex=True).astype(float)
-    df['id_guia'] = df['id_guia'].astype(str)
-    df['serial'] = df['serial'].astype(str)
-    df['telefono'] = df['telefono'].astype(str)
+    # Asegura que las siguientes columnas sean tratadas como strings
+    for column in ['id_guia', 'serial', 'telefono']:
+        if column in df.columns:
+            df[column] = df[column].astype(str)
 
-    print(df)
     # Convierte el DataFrame a una lista de diccionarios para la inserción
     list_of_dicts = df.to_dict(orient="records")
 
@@ -151,6 +162,7 @@ async def insert_df_into_table(db, table_name: str, df: pd.DataFrame):
     async with db.transaction():
         for record in list_of_dicts:
             await db.execute(query=query, values=record)
+
 
 def expandir_contenido(row):
     # Extrae todas las secuencias de 'cantidad * producto.' de 'contenido'
@@ -193,7 +205,7 @@ def agregar_producto(cliente: int, df: pd.DataFrame, orden: int) -> pd.DataFrame
     df['alias'] = df['producto'].apply(lambda x: buscar_alias(x, df_producto))
     df['id_cliente'] = cliente
     df['orden'] = orden
-
+    
     # Crear una nueva columna 'alias' en df que contenga el 'alias' de df_producto donde 'producto' coincide
     # df['alias'] = df['id_producto'].map(df_producto.set_index('producto')['alias'])
     df['motivo'] = 'j'

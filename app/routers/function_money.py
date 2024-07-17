@@ -45,14 +45,14 @@ async def verificar_dinero(tipo_de_pago: str):
     result_dicts = [
         {
             'consignatario': record['consignatario'],
-            'cod_men': (record['cod_men']),
+            'cod_men': str(record['cod_men']),  # Convertido a string
             'serial': str(record['serial']),
-            'valor_consignacion': (record['valor_consignacion'])
+            'valor_consignacion': str(record['valor_consignacion'])  # Convertido a string
         } for record in result
     ]
     return result_dicts
 
-    
+   
 
 async def actualizar_estado_dinero(serial: str, tipo_de_pago: str, verificacion: bool, verificado_por: str, numero_nequi: int):
     query = estado_dinero_table.update().\
