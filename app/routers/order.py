@@ -46,7 +46,7 @@ async def create_order(order_number: int, id_cliente: int, file: UploadFile = Fi
         df = pd.read_excel(BytesIO(contents))
         logger.debug("DataFrame columns after reading Excel: %s", df.columns)
 
-        last_id = await get_last_id(order_table)
+        last_id = await get_last_id('orders')
         df = add_serial_numbers(last_id, df)
         df_updated = await check_order_and_update_df(order_number_int, df)        
                 
@@ -68,7 +68,7 @@ async def create_order(order_number: int, id_cliente: int, file: UploadFile = Fi
             # Opcional: Maneja el caso de que 'recaudo' no exista en df_updated1, por ejemplo, asignando un valor predeterminado
             df_updated1['recaudo'] = 0.0  # Asigna un valor
 
-        await insert_df_into_table(database, order_table.name, df_updated1)
+        await insert_df_into_table('orders', df_updated1)
         nuevas_filas = []
         for _, row in df_updated1.iterrows():
             nuevas_filas.extend(expandir_contenido(row))
@@ -79,7 +79,7 @@ async def create_order(order_number: int, id_cliente: int, file: UploadFile = Fi
 
         print(f"Pre-insert check for suborder_table: {df_inventario.dtypes}")
         logger.debug(f"Dataframe: {df_inventario.head()}")
-        await insert_df_into_table(database, suborder_table.name, df_inventario)
+        await insert_df_into_table('suborders', df_inventario)
         
         return {"message": "File processed successfully", "data": df_updated.head().to_dict()}
     except Exception as e:

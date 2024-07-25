@@ -1,5 +1,6 @@
 from jose import jwt
 from fastapi import Depends, HTTPException, status
+from app.config import supabase
 from datetime import datetime
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.sql import update
@@ -16,7 +17,7 @@ from app.database import (
 from app.models.order import Order, OrderId
 from datetime import datetime
 from app.models.seguimiento import Comentario, ComentarioId, Cajoneras
-from app.columns import column_names
+# from app.columns import column_names
 from sqlalchemy import select, func, delete
 import pandas as pd
 import re
@@ -88,10 +89,13 @@ async def print_table_as_dataframe(table_name: str):
     print(df)
 
 async def get_last_id(table):
-    query = select(func.max(table.c.id))
-    result = await database.execute(query)
+    query = supabase.table(table).select(func.max('serial'))
+    data = await query.execute()
+    max_id = data[0][0]
+    # query = select(func.max(table.c.id))
+    # result = await database.execute(query)
     # Directamente asignar el resultado a last_id, manejando el caso de None
-    last_id = int(result) if result is not None else 0
+    last_id = int(max_id) if max_id is not None else 0
     return last_id
 
 def add_serial_numbers(last_id, df):
@@ -104,10 +108,12 @@ def add_serial_numbers(last_id, df):
     return df
 
 async def check_order_and_update_df(order_number, df):
-    query = select(order_table).where(order_table.c.orden == order_number)
-    result = await database.fetch_one(query)
     
-    if result:
+    response = supabase.table("orders").select("*").eq("orden", "orden_number").execute()
+    # query = select(order_table).where(order_table.c.orden == order_number)
+    # result = await database.fetch_one(query)
+    
+    if response:
         # Si el número de orden ya existe, retorna un mensaje indicando que ya existe
         return "Order number already exists."
     else:
@@ -116,14 +122,24 @@ async def check_order_and_update_df(order_number, df):
         return df
     
 def rename_and_adjust_columns(df, client_number):
-    # Verificar si el número del cliente existe en el diccionario
-    if client_number in column_names:
-        # Renombrar las columnas según el cliente
-        df = df.rename(columns=column_names[client_number])
-        # Añadir la columna 'id_cliente' con el valor de client_number
-        df = df.assign(id_cliente=client_number)
+    # Filtrar en la tabla columns las columnas de ese cliente
+    response = supabase.table("columns").select("*").eq("id_cliente", client_number).execute()
+    if response.error:
+        print(f"Cliente {client_number} no encontrado.")
+    # crear un df con la respuesta
+    data = response.data
+    column_names = pd.DataFrame(data)
+    # Renombrar las columnas según la columna name de column_names
+    # Crear un diccionario de mapeo de los nombres antiguos a los nuevos
+    rename_dict = dict(zip(column_names['original_name'], column_names['name']))
+
+    # Renombrar las columnas del DataFrame df
+    df.rename(columns=rename_dict, inplace=True)
+        # df = df.rename(columns=column_names[client_number])
+        # # Añadir la columna 'id_cliente' con el valor de client_number
+        # df = df.assign(id_cliente=client_number)
         
-        column_order = [
+    column_order = [
             'id_cliente',
             'orden',
             'serial',
@@ -138,12 +154,34 @@ def rename_and_adjust_columns(df, client_number):
             'recaudo',
             'contenido']
         # Reordenar las columnas en el DataFrame
-        df = df[column_order]
-    else:
-        print(f"Cliente {client_number} no encontrado.")
+    df = df[column_order]
+    
     return df
 
-async def insert_df_into_table(db, table_name: str, df: pd.DataFrame):
+# async def insert_df_into_table(db, table_name: str, df: pd.DataFrame):
+#     # Asegura que las siguientes columnas sean tratadas como strings
+#     for column in ['id_guia', 'serial', 'telefono']:
+#         if column in df.columns:
+#             df[column] = df[column].astype(str)
+
+#     # Convierte el DataFrame a una lista de diccionarios para la inserción
+#     list_of_dicts = df.to_dict(orient="records")
+
+#     # Construye la consulta SQL para la inserción
+#     columns = ', '.join([f'"{column}"' for column in df.columns])
+#     placeholders = ', '.join([f':{column}' for column in df.columns])
+#     query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+
+#     # Ejecuta la consulta para cada fila del DataFrame
+#     async with db.transaction():
+#         for record in list_of_dicts:
+#             # Asegúrate de que los valores se pasen correctamente a la consulta
+#             # Convertir valores a los tipos adecuados según sea necesario
+#             # Aquí se asume que 'db.execute' puede manejar un diccionario de valores directamente
+#             # Si no es el caso, ajusta esta parte según la API de tu base de datos
+#             await db.execute(query=query, values=record)
+
+async def insert_df_into_table(table_name: str, df: pd.DataFrame):
     # Asegura que las siguientes columnas sean tratadas como strings
     for column in ['id_guia', 'serial', 'telefono']:
         if column in df.columns:
@@ -152,19 +190,14 @@ async def insert_df_into_table(db, table_name: str, df: pd.DataFrame):
     # Convierte el DataFrame a una lista de diccionarios para la inserción
     list_of_dicts = df.to_dict(orient="records")
 
-    # Construye la consulta SQL para la inserción
-    columns = ', '.join([f'"{column}"' for column in df.columns])
-    placeholders = ', '.join([f':{column}' for column in df.columns])
-    query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+    # Inserta los datos en la tabla usando la API de Supabase
+    response = await supabase.table(table_name).insert(list_of_dicts).execute()
 
-    # Ejecuta la consulta para cada fila del DataFrame
-    async with db.transaction():
-        for record in list_of_dicts:
-            # Asegúrate de que los valores se pasen correctamente a la consulta
-            # Convertir valores a los tipos adecuados según sea necesario
-            # Aquí se asume que 'db.execute' puede manejar un diccionario de valores directamente
-            # Si no es el caso, ajusta esta parte según la API de tu base de datos
-            await db.execute(query=query, values=record)
+    if response.error:
+        print(f"Error inserting data: {response.error}")
+    else:
+        print(f"Data inserted successfully: {response.data}")
+
 
 def expandir_contenido(row):
     # Extrae todas las secuencias de 'cantidad * producto.' de 'contenido'
@@ -187,18 +220,45 @@ def expandir_contenido(row):
 
     return nuevas_filas
 
+# def agregar_producto(cliente: int, df: pd.DataFrame, orden: int) -> pd.DataFrame:
+#     # Cargar el archivo CSV en un DataFrame
+#     path = 'app/tablas/producto.csv'
+#     df_producto = pd.read_csv(path, sep=',', encoding='utf-8')
+
+#     # Filtrar las filas que tienen el cliente especificado
+#     df_producto = df_producto[df_producto['cliente'] == cliente]
+
+#     # Si el DataFrame filtrado está vacío, informar que el cliente no existe
+#     if df_producto.empty:
+#         print(f'El cliente {cliente} no existe.')
+#         return df
+
+#     # Crear una copia del DataFrame original para evitar cambios en el DataFrame original
+#     df = df.copy()
+
+#     # Crear una nueva columna 'producto_id' en df que contenga el 'id' de df_producto donde 'producto' coincide
+#     df['id_producto'] = df['producto'].apply(lambda x: buscar_producto(x, df_producto))
+#     df['alias'] = df['producto'].apply(lambda x: buscar_alias(x, df_producto))
+#     df['id_cliente'] = cliente
+#     df['orden'] = orden
+#     df['motivo'] = 'j'
+#     df['id_producto'] = df['id_producto'].astype(int)
+#     df['id_cliente'] = df['id_cliente'].astype(int)
+#     df['orden'] = df['orden'].astype(int)
+#     return df
+
 def agregar_producto(cliente: int, df: pd.DataFrame, orden: int) -> pd.DataFrame:
     # Cargar el archivo CSV en un DataFrame
-    path = 'app/tablas/producto.csv'
-    df_producto = pd.read_csv(path, sep=',', encoding='utf-8')
+    
+    response = supabase.table("products").select("*").eq(cliente, "id_cliente").execute()
+    # Verifica si hubo un error en la respuesta
+    if response.error:
+        print(f"Error fetching data: {response.error}")
+    data = response.data
+    df_producto = pd.DataFrame(data)
 
     # Filtrar las filas que tienen el cliente especificado
     df_producto = df_producto[df_producto['cliente'] == cliente]
-
-    # Si el DataFrame filtrado está vacío, informar que el cliente no existe
-    if df_producto.empty:
-        print(f'El cliente {cliente} no existe.')
-        return df
 
     # Crear una copia del DataFrame original para evitar cambios en el DataFrame original
     df = df.copy()
@@ -213,6 +273,7 @@ def agregar_producto(cliente: int, df: pd.DataFrame, orden: int) -> pd.DataFrame
     df['id_cliente'] = df['id_cliente'].astype(int)
     df['orden'] = df['orden'].astype(int)
     return df
+
 
 def buscar_producto(producto, df_producto):
     for palabra in producto.split():

@@ -19,3 +19,4 @@ pandas
 unidecode
 httpx
 openpyxl
+supabase
