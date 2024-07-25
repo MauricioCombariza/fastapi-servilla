@@ -3,12 +3,21 @@ from functools import lru_cache
 import os
 from supabase import create_client, Client
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
 
+# Cargar las variables de entorno desde el archivo .env
+load_dotenv()
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
+# Obtener las variables de entorno
+url: Optional[str] = os.environ.get("SUPABASE_URL")
+key: Optional[str] = os.environ.get("SUPABASE_KEY")
+
+# Verificar si las variables de entorno están definidas
+if not url or not key:
+    raise ValueError("Las variables de entorno SUPABASE_URL y SUPABASE_KEY deben estar definidas")
+
+# Crear el cliente de Supabase
 supabase: Client = create_client(url, key)
-
 class BaseConfig(BaseSettings):
     ENV_STATE: Optional[str] = None
     DATABASE_URL: Optional[str] = None
