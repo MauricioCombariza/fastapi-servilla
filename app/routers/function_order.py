@@ -88,16 +88,20 @@ async def print_table_as_dataframe(table_name: str):
     # Imprimir el DataFrame
     print(df)
 
-async def get_last_id(table):
-    query = supabase.table(table).select(func.max('serial'))
-    data = await query.execute()
-    max_id = data[0][0]
-    # query = select(func.max(table.c.id))
-    # result = await database.execute(query)
-    # Directamente asignar el resultado a last_id, manejando el caso de None
-    last_id = int(max_id) if max_id is not None else 0
-    return last_id
+    
 
+async def get_last_id(table_name: str):
+    response = supabase.table(table_name).select("id").order("id", desc=True).limit(1).execute()
+
+    if response.data:
+        max_id = response.data[0]['id']
+        return max_id
+    else:
+        # Si no se encontraron datos, retornar una lista vacía
+        return 0
+
+
+    
 def add_serial_numbers(last_id, df):
     # Asegúrate de que el índice del DataFrame comience en 1 si es necesario
     df.reset_index(drop=True, inplace=True)
@@ -106,98 +110,51 @@ def add_serial_numbers(last_id, df):
     df['serial'] = df.index + 1 + last_id + 7210000000
     
     return df
-
+    
 async def check_order_and_update_df(order_number, df):
+    # Check for existing order using a more efficient query
     
-    response = supabase.table("orders").select("*").eq("orden", "orden_number").execute()
-    # query = select(order_table).where(order_table.c.orden == order_number)
-    # result = await database.fetch_one(query)
-    
-    if response:
-        # Si el número de orden ya existe, retorna un mensaje indicando que ya existe
+    response = supabase.table("orders").select("*").eq("orden", order_number).execute()
+    print(response)
+    if len(response.data) > 0:
         return "Order number already exists."
     else:
-        # Si el número de orden no existe, añade una nueva columna al DataFrame con el número de orden
-        df['orden'] = order_number
-        return df
-    
-def rename_and_adjust_columns(df, client_number):
-    # Filtrar en la tabla columns las columnas de ese cliente
+      # Update DataFrame with order number
+      df['orden'] = order_number
+    #   print(df)
+      return df
+          
+async def rename_and_adjust_columns(df, client_number):
     response = supabase.table("columns").select("*").eq("id_cliente", client_number).execute()
-    if response.error:
+    if len(response.data)==0:
         print(f"Cliente {client_number} no encontrado.")
-    # crear un df con la respuesta
+        return df  # Return the original DataFrame if there's an error
+    print(df.columns)
     data = response.data
     column_names = pd.DataFrame(data)
-    # Renombrar las columnas según la columna name de column_names
-    # Crear un diccionario de mapeo de los nombres antiguos a los nuevos
-    rename_dict = dict(zip(column_names['original_name'], column_names['name']))
-
-    # Renombrar las columnas del DataFrame df
+    rename_dict = dict(zip(column_names['actual_name'], column_names['name']))
     df.rename(columns=rename_dict, inplace=True)
-        # df = df.rename(columns=column_names[client_number])
-        # # Añadir la columna 'id_cliente' con el valor de client_number
-        # df = df.assign(id_cliente=client_number)
-        
+
     column_order = [
-            'id_cliente',
-            'orden',
-            'serial',
-            'id_guia',
-            'nombre',
-            'ciudad',
-            'id_bodega',
-            'direccion',
-            'telefono',
-            'f_emi',
-            'forma_de_pago',
-            'recaudo',
-            'contenido']
-        # Reordenar las columnas en el DataFrame
+        'id_cliente', 'orden', 'serial', 'id_guia', 'nombre', 'ciudad',
+        'id_bodega', 'direccion', 'telefono', 'f_emi', 'forma_de_pago',
+        'recaudo', 'contenido'
+    ]
     df = df[column_order]
-    
     return df
 
-# async def insert_df_into_table(db, table_name: str, df: pd.DataFrame):
-#     # Asegura que las siguientes columnas sean tratadas como strings
-#     for column in ['id_guia', 'serial', 'telefono']:
-#         if column in df.columns:
-#             df[column] = df[column].astype(str)
-
-#     # Convierte el DataFrame a una lista de diccionarios para la inserción
-#     list_of_dicts = df.to_dict(orient="records")
-
-#     # Construye la consulta SQL para la inserción
-#     columns = ', '.join([f'"{column}"' for column in df.columns])
-#     placeholders = ', '.join([f':{column}' for column in df.columns])
-#     query = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-
-#     # Ejecuta la consulta para cada fila del DataFrame
-#     async with db.transaction():
-#         for record in list_of_dicts:
-#             # Asegúrate de que los valores se pasen correctamente a la consulta
-#             # Convertir valores a los tipos adecuados según sea necesario
-#             # Aquí se asume que 'db.execute' puede manejar un diccionario de valores directamente
-#             # Si no es el caso, ajusta esta parte según la API de tu base de datos
-#             await db.execute(query=query, values=record)
-
 async def insert_df_into_table(table_name: str, df: pd.DataFrame):
-    # Asegura que las siguientes columnas sean tratadas como strings
     for column in ['id_guia', 'serial', 'telefono']:
         if column in df.columns:
             df[column] = df[column].astype(str)
 
-    # Convierte el DataFrame a una lista de diccionarios para la inserción
     list_of_dicts = df.to_dict(orient="records")
+    response = supabase.table(table_name).insert(list_of_dicts).execute()
 
-    # Inserta los datos en la tabla usando la API de Supabase
-    response = await supabase.table(table_name).insert(list_of_dicts).execute()
-
-    if response.error:
+    if len(response.data) == 0:
         print(f"Error inserting data: {response.error}")
     else:
         print(f"Data inserted successfully: {response.data}")
-
 
 def expandir_contenido(row):
     # Extrae todas las secuencias de 'cantidad * producto.' de 'contenido'
@@ -220,65 +177,34 @@ def expandir_contenido(row):
 
     return nuevas_filas
 
-# def agregar_producto(cliente: int, df: pd.DataFrame, orden: int) -> pd.DataFrame:
-#     # Cargar el archivo CSV en un DataFrame
-#     path = 'app/tablas/producto.csv'
-#     df_producto = pd.read_csv(path, sep=',', encoding='utf-8')
 
-#     # Filtrar las filas que tienen el cliente especificado
-#     df_producto = df_producto[df_producto['cliente'] == cliente]
-
-#     # Si el DataFrame filtrado está vacío, informar que el cliente no existe
-#     if df_producto.empty:
-#         print(f'El cliente {cliente} no existe.')
-#         return df
-
-#     # Crear una copia del DataFrame original para evitar cambios en el DataFrame original
-#     df = df.copy()
-
-#     # Crear una nueva columna 'producto_id' en df que contenga el 'id' de df_producto donde 'producto' coincide
-#     df['id_producto'] = df['producto'].apply(lambda x: buscar_producto(x, df_producto))
-#     df['alias'] = df['producto'].apply(lambda x: buscar_alias(x, df_producto))
-#     df['id_cliente'] = cliente
-#     df['orden'] = orden
-#     df['motivo'] = 'j'
-#     df['id_producto'] = df['id_producto'].astype(int)
-#     df['id_cliente'] = df['id_cliente'].astype(int)
-#     df['orden'] = df['orden'].astype(int)
-#     return df
-
-def agregar_producto(cliente: int, df: pd.DataFrame, orden: int) -> pd.DataFrame:
-    # Cargar el archivo CSV en un DataFrame
-    
-    response = supabase.table("products").select("*").eq(cliente, "id_cliente").execute()
-    # Verifica si hubo un error en la respuesta
-    if response.error:
+async def agregar_producto(cliente: int, df: pd.DataFrame, orden: int) -> pd.DataFrame:
+    response = supabase.table("products").select("*").eq("id_cliente", cliente).execute()
+    # print(response.data)
+    if len(response.data) == 0:
         print(f"Error fetching data: {response.error}")
+        return df  # Return the original DataFrame if there's an error
+    # print("df: ", df)
     data = response.data
     df_producto = pd.DataFrame(data)
-
-    # Filtrar las filas que tienen el cliente especificado
-    df_producto = df_producto[df_producto['cliente'] == cliente]
-
-    # Crear una copia del DataFrame original para evitar cambios en el DataFrame original
+    df_producto = df_producto[df_producto['id_cliente'] == cliente]
+    # print("df_producto: ", df_producto.columns)
     df = df.copy()
-
-    # Crear una nueva columna 'producto_id' en df que contenga el 'id' de df_producto donde 'producto' coincide
     df['id_producto'] = df['producto'].apply(lambda x: buscar_producto(x, df_producto))
     df['alias'] = df['producto'].apply(lambda x: buscar_alias(x, df_producto))
     df['id_cliente'] = cliente
     df['orden'] = orden
-    df['motivo'] = 'j'
+    df['estado'] = 'j'
     df['id_producto'] = df['id_producto'].astype(int)
     df['id_cliente'] = df['id_cliente'].astype(int)
     df['orden'] = df['orden'].astype(int)
+    # print(df)
     return df
-
 
 def buscar_producto(producto, df_producto):
     for palabra in producto.split():
         if palabra in df_producto['producto'].values:
-            return df_producto.loc[df_producto['producto'] == palabra, 'id'].values[0]
+            return df_producto.loc[df_producto['producto'] == palabra, 'id_producto'].values[0]
     raise ValueError(f"No se encontró el producto '{producto}' en df_producto")
 
 def buscar_alias(producto, df_producto):
@@ -289,23 +215,44 @@ def buscar_alias(producto, df_producto):
 
 async def get_order_summary(order_id, db):
     try:
-        # Crear una consulta para obtener todos los datos de suborder_table
-        query = select(suborder_table.c).where(suborder_table.c.orden == order_id)
-        logging.info(f"Executing query: {query}")
+        response = (
+            supabase.table("suborders")
+            .select("orden", "id_producto", "alias", "cantidad")
+            .eq("orden", order_id)
+            .execute()
+        )
+        # Verificar si la respuesta contiene datos
+        if response.data:
+            logging.info(f"Query results: {response.data}")
 
-        # Ejecutar la consulta y obtener todos los resultados
-        rows = await db.fetch_all(query)
-        logging.info(f"Query results: {rows}")
+            # Convertir los resultados en una lista de diccionarios
+            diccionario = [dict(row) for row in response.data]
+            # Convertir el diccionario en un DataFrame
+            df = pd.DataFrame(diccionario)
+            # Hacer un pivot table que muestre las columnas 'id_producto' y 'alias' y sume la columna 'cantidad'
+            df = df.pivot_table(index='alias', values='cantidad', aggfunc='sum', fill_value=0)
+            df = df.reset_index()
+            return df.to_dict(orient="records")
+        else:
+            logging.info("No data found for the given order_id.")
+            return []
+        # Crear una consulta para obtener todos los datos de suborder_table
+        # # query = select(suborder_table.c).where(suborder_table.c.orden == order_id)
+        # logging.info(f"Executing query: {query}")
+
+        # # Ejecutar la consulta y obtener todos los resultados
+        # rows = await db.fetch_all(query)
+        # logging.info(f"Query results: {rows}")
 
         
-        # Convertir los resultados en una lista de diccionarios
-        diccionario = [dict(row) for row in rows]
-        # Convertir el diccionario en un DataFrame
-        df = pd.DataFrame(diccionario)
-        # Hacer un pivot table que muestre las columnas 'id_producto' y 'alias' y sume la columna 'cantidad'
-        df = df.pivot_table(index='alias', values='cantidad', aggfunc='sum', fill_value=0)
-        df = df.reset_index()
-        return df.to_dict(orient="records")
+        # # Convertir los resultados en una lista de diccionarios
+        # diccionario = [dict(row) for row in rows]
+        # # Convertir el diccionario en un DataFrame
+        # df = pd.DataFrame(diccionario)
+        # # Hacer un pivot table que muestre las columnas 'id_producto' y 'alias' y sume la columna 'cantidad'
+        # df = df.pivot_table(index='alias', values='cantidad', aggfunc='sum', fill_value=0)
+        # df = df.reset_index()
+        # return df.to_dict(orient="records")
 
 
     except Exception as e:

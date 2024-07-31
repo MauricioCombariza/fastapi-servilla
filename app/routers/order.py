@@ -45,15 +45,17 @@ async def create_order(order_number: int, id_cliente: int, file: UploadFile = Fi
         contents = await file.read()
         df = pd.read_excel(BytesIO(contents))
         logger.debug("DataFrame columns after reading Excel: %s", df.columns)
+        df['id_cliente'] = id_cliente_int
 
         last_id = await get_last_id('orders')
+        
         df = add_serial_numbers(last_id, df)
-        df_updated = await check_order_and_update_df(order_number_int, df)        
+        df_updated = await check_order_and_update_df(order_number_int, df)    
                 
         if isinstance(df_updated, str):
             return JSONResponse(status_code=400, content={"message": df_updated})
         
-        df_updated1 = rename_and_adjust_columns(df_updated, id_cliente_int)
+        df_updated1 = await rename_and_adjust_columns(df_updated, id_cliente_int)
         logger.debug("DataFrame columns after renaming and adjusting: %s", df_updated1.columns)
         # Antes de la primera inserción
         print(f"Pre-insert check for order_table: {df_updated1.dtypes}")
@@ -67,17 +69,22 @@ async def create_order(order_number: int, id_cliente: int, file: UploadFile = Fi
         else:
             # Opcional: Maneja el caso de que 'recaudo' no exista en df_updated1, por ejemplo, asignando un valor predeterminado
             df_updated1['recaudo'] = 0.0  # Asigna un valor
+        # Convertir todas las columnas de tipo Timestamp a cadenas de texto
+        for column in df_updated1.select_dtypes(include=['datetime64[ns]', 'datetime64[ns, UTC]']).columns:
+            df_updated1[column] = df_updated1[column].astype(str)
+
 
         await insert_df_into_table('orders', df_updated1)
         nuevas_filas = []
         for _, row in df_updated1.iterrows():
             nuevas_filas.extend(expandir_contenido(row))
-            
+
         df_inventario = pd.DataFrame(nuevas_filas)
         df_inventario['producto'] = df_inventario['producto'].str.lower().apply(unidecode.unidecode)
-        df_inventario = agregar_producto(cliente=id_cliente_int, df=df_inventario, orden=order_number_int)
-
-        print(f"Pre-insert check for suborder_table: {df_inventario.dtypes}")
+        df_inventario = await agregar_producto(cliente=id_cliente_int, df=df_inventario, orden=order_number_int)
+        # print("Dataframe de inventario: ", df_inventario)
+        
+        # print(f"Pre-insert check for suborder_table: {df_inventario.dtypes}")
         logger.debug(f"Dataframe: {df_inventario.head()}")
         await insert_df_into_table('suborders', df_inventario)
         
